@@ -1,4 +1,4 @@
-use ggez::{Context, GameResult, graphics};
+use ggez::{Context, GameError, GameResult, graphics};
 use ggez::event::EventHandler;
 use ggez::graphics::{Color, DrawParam};
 use telnet::Telnet;
@@ -35,5 +35,10 @@ impl EventHandler for GameState {
         canvas.draw(&self.screen, DrawParam::default());
         // Draw code here...
         canvas.finish(ctx)
+    }
+
+    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> Result<(), GameError> {
+        self.screen.resize(width as u32, height as u32);
+        Ok(())
     }
 }

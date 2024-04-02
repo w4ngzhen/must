@@ -1,5 +1,5 @@
 use ggez::{ContextBuilder, event, graphics};
-use ggez::conf::WindowMode;
+use ggez::conf::{WindowMode, WindowSetup};
 use crate::constants::FONT_FLAG_NAME;
 use crate::game_state::GameState;
 
@@ -15,6 +15,7 @@ fn main() {
     let (mut ctx, event_loop) =
         ContextBuilder::new("must", "w4nzhen")
             .window_mode(WindowMode::default().dimensions(1200., 800.).resizable(true))
+            .window_setup(WindowSetup::default().title("MUST: mud client by rust"))
             .build()
             .expect("Could not create ggez context!");
     ctx.gfx.add_font(
