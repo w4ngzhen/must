@@ -4,7 +4,6 @@ use crate::constants::FONT_FLAG_NAME;
 use crate::game_state::GameState;
 
 mod game_state;
-mod telnet_client;
 mod screen;
 mod constants;
 

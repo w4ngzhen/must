@@ -3,7 +3,6 @@ use ggez::event::EventHandler;
 use ggez::graphics::{Color, DrawParam};
 use telnet::Telnet;
 use crate::screen::Screen;
-use crate::telnet_client::TelnetData;
 
 pub struct GameState {
     telnet_client: Telnet,
