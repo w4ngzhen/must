@@ -1,7 +1,8 @@
 use ggez::{Context, GameError, GameResult, graphics};
 use ggez::event::EventHandler;
-use ggez::graphics::{Color, DrawParam};
+use ggez::graphics::Color;
 use telnet::Telnet;
+
 use crate::screen::Screen;
 
 pub struct GameState {
@@ -32,7 +33,7 @@ impl EventHandler for GameState {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
-        canvas.draw(&self.screen, DrawParam::default());
+        self.screen.draw(&mut canvas, ctx);
         // Draw code here...
         canvas.finish(ctx)
     }
