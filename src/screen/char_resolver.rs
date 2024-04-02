@@ -1,5 +1,5 @@
 use vte::{Params, Perform};
-use crate::screen::char_line::{CharCode, CharLine};
+use crate::screen::char_line::{CharCode, CharLine, TerminalCharColor};
 
 pub struct CharResolver {
     char_lines: Vec<CharLine>,
@@ -33,5 +33,27 @@ impl Perform for CharResolver {
         }
     }
 
-    fn csi_dispatch(&mut self, _params: &Params, _intermediates: &[u8], _ignore: bool, _action: char) {}
+    fn csi_dispatch(&mut self, _params: &Params, _intermediates: &[u8], _ignore: bool, action: char) {
+        match action {
+            // 在ANSI转义序列中，以 m 结尾的一般是指文本样式、颜色或其他可视属性的设置。
+            'm' => {}
+            _ => {}
+        }
+    }
+}
+
+impl CharResolver {
+    fn get_terminal_color(color_num: u32) -> TerminalCharColor {
+        match color_num {
+            // 30前景色黑色，40背景色黑色
+            30 | 40 => TerminalCharColor::BLACK,
+            31 | 41 => TerminalCharColor::RED,
+            32 | 42 => TerminalCharColor::GREEN,
+            33 | 43 => TerminalCharColor::YELLOW,
+            34 | 44 => TerminalCharColor::BLUE,
+            35 | 45 => TerminalCharColor::PURPLE,
+            36 | 46 => TerminalCharColor::CYAN,
+            37 | 47 | _ => TerminalCharColor::WHITE,
+        }
+    }
 }
