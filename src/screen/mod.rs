@@ -1,22 +1,25 @@
-use ggez::Context;
 use ggez::context::Has;
 use ggez::glam::Vec2;
-use ggez::graphics::{Canvas, Color, Drawable, DrawParam, Mesh, PxScale, Quad, Rect, Text, TextFragment, TextLayout};
+use ggez::graphics::{
+    Canvas, Color, DrawParam, Drawable, Mesh, PxScale, Quad, Rect, Text, TextFragment, TextLayout,
+};
 use ggez::mint::Point2;
+use ggez::Context;
 
 use crate::constants::FONT_FLAG_NAME;
 use crate::screen::char_line::{CharCode, TerminalCharColor};
 use crate::screen::char_resolver::CharResolver;
 
-mod char_resolver;
 mod char_line;
+mod char_resolver;
 
-const CHAR_CELL_SIZE: f32 = 28.;
+const CHAR_CELL_HEIGHT: u32 = 28;
+const CHAR_CELL_WIDE_WIDTH: u32 = 28;
+const CHAR_CELL_THIN_WIDTH: u32 = 24;
 
 pub struct Screen {
     width: u32,
     height: u32,
-    cols: u32,
     rows: u32,
     vt_parser: vte::Parser,
     char_resolver: CharResolver,
@@ -24,12 +27,10 @@ pub struct Screen {
 
 impl Screen {
     pub fn new(width: u32, height: u32) -> Self {
-        let (cols, rows) = Screen::revise_cell(width, height);
         Self {
             width,
             height,
-            cols,
-            rows,
+            rows: height / CHAR_CELL_HEIGHT,
             vt_parser: vte::Parser::new(),
             char_resolver: CharResolver::new(),
         }
@@ -44,16 +45,7 @@ impl Screen {
     pub fn resize(&mut self, width: u32, height: u32) {
         self.width = width;
         self.height = height;
-        let (cols, rows) = Screen::revise_cell(width, height);
-        self.cols = cols;
-        self.rows = rows;
-    }
-
-    /// 根据宽高，计算当前屏幕所能呈现的字符格子数
-    fn revise_cell(width: u32, height: u32) -> (u32, u32) {
-        let cols = (width as f32 / CHAR_CELL_SIZE).floor() as u32;
-        let rows = (height as f32 / CHAR_CELL_SIZE).floor() as u32;
-        (cols, rows)
+        self.rows = height / CHAR_CELL_HEIGHT;
     }
 
     pub fn draw(&self, canvas: &mut Canvas, ctx: &Context) {
@@ -75,24 +67,31 @@ impl Screen {
             if char_code_len == 0 {
                 continue;
             }
-            let start_code_idx = 0;
-            let end_code_idx = if char_code_len > self.cols as usize {
-                self.cols as usize - 1
-            } else {
-                char_code_len - 1
-            };
-            for col_idx in start_code_idx..=end_code_idx {
-                // line_idx是一个大于等于0的，表示文本行列表的索引，
-                // 这里将其减去 start_line_idx，才能得到屏幕上的垂直cell的索引
-                let row_idx = line_idx - start_line_idx;
-                let cc = &char_codes[col_idx];
+            // line_idx是一个大于等于0的，表示文本行列表的索引，
+            // 这里将其减去 start_line_idx，才能得到屏幕上的垂直cell的索引
+            let row_idx = line_idx - start_line_idx;
+            // 已经渲染的字符的总宽度，
+            let mut rendered_char_width = 0u32;
+            for char_idx in 0..char_code_len {
+                let cc = &char_codes[char_idx];
+                // 如果cc为宽度字符，用更宽的格子呈现
+                let char_width = if is_wide_char(cc.c) {
+                    CHAR_CELL_WIDE_WIDTH
+                } else {
+                    CHAR_CELL_THIN_WIDTH
+                };
+                if rendered_char_width + char_width > self.width {
+                    // 若该字符待渲染的宽度加上前面已经渲染的宽度超过了当前终端画布宽度，不再渲染后续内容
+                    break;
+                }
                 let rect = Rect::new(
-                    col_idx as f32 * CHAR_CELL_SIZE,
-                    row_idx as f32 * CHAR_CELL_SIZE,
-                    CHAR_CELL_SIZE,
-                    CHAR_CELL_SIZE,
+                    rendered_char_width as f32,
+                    (row_idx as u32 * CHAR_CELL_HEIGHT) as f32,
+                    char_width as f32,
+                    CHAR_CELL_HEIGHT as f32,
                 );
                 self.draw_single_char_code(canvas, ctx, cc, rect);
+                rendered_char_width += char_width;
             }
         }
     }
@@ -102,16 +101,23 @@ impl Screen {
         let mut txt = Text::new(TextFragment {
             text: cc.c.clone().to_string(),
             font: Some(FONT_FLAG_NAME.into()),
-            scale: Some(PxScale { x: rect.w, y: rect.h }),
+            scale: Some(PxScale {
+                x: rect.w,
+                y: rect.h,
+            }),
             color: Some(fg_color),
         });
-        txt.set_bounds(Vec2::new(rect.w, rect.h)).set_layout(TextLayout::center());
+        txt.set_bounds(Vec2::new(rect.w, rect.h))
+            .set_layout(TextLayout::center());
         // 背景色
         if let Some(bg_color) = &cc.style.bg_color {
             let bg_color = convert_color(bg_color);
             canvas.draw(
                 &Quad,
-                DrawParam::default().dest(rect.point()).scale(rect.size()).color(bg_color),
+                DrawParam::default()
+                    .dest(rect.point())
+                    .scale(rect.size())
+                    .color(bg_color),
             );
         }
         // 下划线
@@ -121,14 +127,18 @@ impl Screen {
             let mesh = Mesh::new_line(ctx, &[start, end], 1., fg_color).expect("");
             canvas.draw(&mesh, DrawParam::default());
         }
-        canvas.draw(
-            &txt,
-            DrawParam::default().dest(rect.center()),
-        );
+        canvas.draw(&txt, DrawParam::default().dest(rect.center()));
     }
 }
 
 fn convert_color(terminal_color: &TerminalCharColor) -> Color {
     let [r, g, b, a] = terminal_color.get_rgba();
     Color::from_rgba(r, g, b, a)
+}
+
+/// 判断一个unicode字符是否是宽体的字符
+/// 我们认为一个中文字符算宽体字符
+fn is_wide_char(c: char) -> bool {
+    (c >= '\u{4E00}' && c <= '\u{9FFF}')  // 基本多文种平面的CJK统一汉字块
+        || (c >= '\u{3400}' && c <= '\u{4DBF}') // 其他补充区汉字块
 }
