@@ -13,24 +13,22 @@ use crate::screen::char_resolver::CharResolver;
 mod char_line;
 mod char_resolver;
 
-const CHAR_CELL_HEIGHT: u32 = 28;
-const CHAR_CELL_WIDE_WIDTH: u32 = 28;
-const CHAR_CELL_THIN_WIDTH: u32 = 24;
+const CHAR_CELL_HEIGHT: f32 = 28.;
+const CHAR_CELL_WIDE_WIDTH: f32 = 28.;
+const CHAR_CELL_THIN_WIDTH: f32 = 24.;
 
 pub struct Screen {
-    width: u32,
-    height: u32,
+    bounds: Rect,
     rows: u32,
     vt_parser: vte::Parser,
     char_resolver: CharResolver,
 }
 
 impl Screen {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(bounds: Rect) -> Self {
         Self {
-            width,
-            height,
-            rows: height / CHAR_CELL_HEIGHT,
+            bounds,
+            rows: (bounds.h / CHAR_CELL_HEIGHT).floor() as u32,
             vt_parser: vte::Parser::new(),
             char_resolver: CharResolver::new(),
         }
@@ -42,10 +40,9 @@ impl Screen {
         }
     }
 
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.width = width;
-        self.height = height;
-        self.rows = height / CHAR_CELL_HEIGHT;
+    pub fn update_bounds(&mut self, bounds: Rect) {
+        self.bounds = bounds;
+        self.rows = (bounds.h / CHAR_CELL_HEIGHT).floor() as u32;
     }
 
     pub fn draw(&self, canvas: &mut Canvas, ctx: &Context) {
@@ -71,7 +68,7 @@ impl Screen {
             // 这里将其减去 start_line_idx，才能得到屏幕上的垂直cell的索引
             let row_idx = line_idx - start_line_idx;
             // 已经渲染的字符的总宽度，
-            let mut rendered_char_width = 0u32;
+            let mut rendered_char_width = 0f32;
             for char_idx in 0..char_code_len {
                 let cc = &char_codes[char_idx];
                 // 如果cc为宽度字符，用更宽的格子呈现
@@ -80,15 +77,15 @@ impl Screen {
                 } else {
                     CHAR_CELL_THIN_WIDTH
                 };
-                if rendered_char_width + char_width > self.width {
+                if rendered_char_width + char_width > self.bounds.w {
                     // 若该字符待渲染的宽度加上前面已经渲染的宽度超过了当前终端画布宽度，不再渲染后续内容
                     break;
                 }
                 let rect = Rect::new(
-                    rendered_char_width as f32,
-                    (row_idx as u32 * CHAR_CELL_HEIGHT) as f32,
-                    char_width as f32,
-                    CHAR_CELL_HEIGHT as f32,
+                    self.bounds.x + rendered_char_width,
+                    self.bounds.y + (row_idx as f32 * CHAR_CELL_HEIGHT),
+                    char_width,
+                    CHAR_CELL_HEIGHT,
                 );
                 self.draw_single_char_code(canvas, ctx, cc, rect);
                 rendered_char_width += char_width;

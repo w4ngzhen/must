@@ -1,23 +1,29 @@
-use ggez::{Context, GameError, GameResult, graphics};
 use ggez::event::EventHandler;
-use ggez::graphics::Color;
+use ggez::graphics::{Color, Rect};
+use ggez::winit::dpi::PhysicalSize;
+use ggez::{graphics, Context, GameError, GameResult};
 use telnet::Telnet;
 
 use crate::screen::Screen;
+use crate::ui::text_input::TextInput;
 
 pub struct GameState {
     telnet_client: Telnet,
     screen: Screen,
+    text_input: TextInput,
 }
-
 
 impl GameState {
     pub fn new(_ctx: &mut Context) -> Self {
         let size = _ctx.gfx.window().inner_size();
-        let mut telnet_client = Telnet::connect(("pkuxkx.net", 8081), 1024).expect("Couldn't connect to the server...");
+        let (screen_bounds, input_bounds) =
+            get_screen_and_input_bounds(size.width as f32, size.height as f32);
+        let mut telnet_client =
+            Telnet::connect(("pkuxkx.net", 8081), 1024).expect("Couldn't connect to the server...");
         Self {
             telnet_client,
-            screen: Screen::new(size.width, size.height),
+            screen: Screen::new(screen_bounds),
+            text_input: TextInput::new("".into(), input_bounds),
         }
     }
 }
@@ -34,12 +40,28 @@ impl EventHandler for GameState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
         self.screen.draw(&mut canvas, ctx);
+        self.text_input.draw(&mut canvas, ctx)?;
         // Draw code here...
         canvas.finish(ctx)
     }
 
-    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) -> Result<(), GameError> {
-        self.screen.resize(width as u32, height as u32);
+    fn resize_event(
+        &mut self,
+        _ctx: &mut Context,
+        width: f32,
+        height: f32,
+    ) -> Result<(), GameError> {
+        let (screen_bounds, input_bounds) = get_screen_and_input_bounds(width, height);
+        println!("{:?}, {:?}", screen_bounds, input_bounds);
+        self.screen.update_bounds(screen_bounds);
+        self.text_input.update_bounds(input_bounds);
         Ok(())
     }
+}
+
+fn get_screen_and_input_bounds(window_width: f32, window_height: f32) -> (Rect, Rect) {
+    let input_height = 40f32;
+    let screen_bounds = Rect::from([0., 0., window_width, window_height - input_height]);
+    let input_bounds = Rect::from([0., screen_bounds.h, window_width, input_height]);
+    (screen_bounds, input_bounds)
 }

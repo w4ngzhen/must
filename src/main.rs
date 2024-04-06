@@ -6,6 +6,7 @@ use crate::game_state::GameState;
 mod game_state;
 mod screen;
 mod constants;
+mod ui;
 
 /// 开发运行前，请确保编译目录（理论上为target目录）下debug目录中，must可执行程序同级下有resources目录，
 /// 且目录中有字体文件："DejaVuSansMono YaHei NF"
