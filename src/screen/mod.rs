@@ -6,16 +6,15 @@ use ggez::graphics::{
 use ggez::mint::Point2;
 use ggez::Context;
 
-use crate::constants::FONT_FLAG_NAME;
+use crate::constants::{
+    CHAR_CELL_HEIGHT, CHAR_CELL_THIN_WIDTH, CHAR_CELL_WIDE_WIDTH, FONT_FLAG_NAME,
+};
 use crate::screen::char_line::{CharCode, TerminalCharColor};
 use crate::screen::char_resolver::CharResolver;
+use crate::utils::is_wide_char;
 
 mod char_line;
 mod char_resolver;
-
-const CHAR_CELL_HEIGHT: f32 = 28.;
-const CHAR_CELL_WIDE_WIDTH: f32 = 28.;
-const CHAR_CELL_THIN_WIDTH: f32 = 24.;
 
 pub struct Screen {
     bounds: Rect,
@@ -131,11 +130,4 @@ impl Screen {
 fn convert_color(terminal_color: &TerminalCharColor) -> Color {
     let [r, g, b, a] = terminal_color.get_rgba();
     Color::from_rgba(r, g, b, a)
-}
-
-/// 判断一个unicode字符是否是宽体的字符
-/// 我们认为一个中文字符算宽体字符
-fn is_wide_char(c: char) -> bool {
-    (c >= '\u{4E00}' && c <= '\u{9FFF}')  // 基本多文种平面的CJK统一汉字块
-        || (c >= '\u{3400}' && c <= '\u{4DBF}') // 其他补充区汉字块
 }

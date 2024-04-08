@@ -23,7 +23,7 @@ impl GameState {
         Self {
             telnet_client,
             screen: Screen::new(screen_bounds),
-            text_input: TextInput::new("".into(), input_bounds),
+            text_input: TextInput::new("hello, world.你好，世界。".into(), input_bounds),
         }
     }
 }
@@ -52,7 +52,6 @@ impl EventHandler for GameState {
         height: f32,
     ) -> Result<(), GameError> {
         let (screen_bounds, input_bounds) = get_screen_and_input_bounds(width, height);
-        println!("{:?}, {:?}", screen_bounds, input_bounds);
         self.screen.update_bounds(screen_bounds);
         self.text_input.update_bounds(input_bounds);
         Ok(())
@@ -62,6 +61,11 @@ impl EventHandler for GameState {
 fn get_screen_and_input_bounds(window_width: f32, window_height: f32) -> (Rect, Rect) {
     let input_height = 40f32;
     let screen_bounds = Rect::from([0., 0., window_width, window_height - input_height]);
-    let input_bounds = Rect::from([0., screen_bounds.h, window_width, input_height]);
+    let input_bounds = Rect::from([
+        0. + 15.,
+        screen_bounds.h,
+        window_width - 15. * 2.,
+        input_height,
+    ]);
     (screen_bounds, input_bounds)
 }
