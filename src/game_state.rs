@@ -80,6 +80,13 @@ impl EventHandler for GameState {
                             self.text_input.delete_char(1)
                         }
                     }
+                    VirtualKeyCode::Return | VirtualKeyCode::Caret => {
+                        if let Some(txt_str) = self.text_input.commit() {
+                            self.telnet_client
+                                .write(txt_str.as_bytes())
+                                .expect("write data err.");
+                        }
+                    }
                     _ => {}
                 },
                 _ => {}

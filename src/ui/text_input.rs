@@ -171,6 +171,16 @@ impl TextInput {
         }
     }
 
+    pub fn commit(&mut self) -> Option<String> {
+        if self.value.is_empty() {
+            None
+        } else {
+            self.history.push(self.value.clone());
+            self.value.clear();
+            Some(self.value.clone())
+        }
+    }
+
     pub fn bounds(&self) -> &Rect {
         &self.bounds
     }
