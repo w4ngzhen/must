@@ -1,5 +1,6 @@
-use ggez::event::EventHandler;
+use ggez::event::{EventHandler, MouseButton};
 use ggez::graphics::{Color, Rect};
+use ggez::mint::Point2;
 use ggez::winit::dpi::PhysicalSize;
 use ggez::{graphics, Context, GameError, GameResult};
 use telnet::Telnet;
@@ -43,6 +44,18 @@ impl EventHandler for GameState {
         self.text_input.draw(&mut canvas, ctx)?;
         // Draw code here...
         canvas.finish(ctx)
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) -> Result<(), GameError> {
+        self.text_input
+            .set_focused(self.text_input.bounds().contains(Point2::from([_x, _y])));
+        Ok(())
     }
 
     fn resize_event(

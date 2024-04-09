@@ -42,7 +42,7 @@ impl TextInput {
                 DrawMode::Stroke(StrokeOptions::default()),
                 self.bounds,
                 5.0,
-                Color::WHITE,
+                self.color(),
             )?
             .build();
         let mesh = Mesh::from_data(ctx, mesh_data);
@@ -76,9 +76,10 @@ impl TextInput {
                 break;
             }
         }
+        let color = self.color();
         if text_overflow {
-            let mut next_char_x = render_bounds.x + render_bounds.w;
             // 反向取字符，从尾巴开始绘制
+            let mut next_char_x = render_bounds.x + render_bounds.w;
             for c in self.value.chars().rev() {
                 let char_width = if is_wide_char(c) {
                     char_cell_wide_width
@@ -94,6 +95,7 @@ impl TextInput {
                 let mut txt = Text::new(TextFragment {
                     text: c.to_string(),
                     font: Some(FONT_FLAG_NAME.into()),
+                    color: Some(color),
                     ..Default::default()
                 });
                 txt.set_bounds(text_rect.size())
@@ -108,8 +110,8 @@ impl TextInput {
                 );
             }
         } else {
-            let mut next_char_x = render_bounds.x;
             // 正向
+            let mut next_char_x = render_bounds.x;
             for c in self.value.chars() {
                 let char_width = if is_wide_char(c) {
                     char_cell_wide_width
@@ -121,6 +123,7 @@ impl TextInput {
                 let mut txt = Text::new(TextFragment {
                     text: c.to_string(),
                     font: Some(FONT_FLAG_NAME.into()),
+                    color: Some(color),
                     ..Default::default()
                 });
                 txt.set_bounds(text_rect.size())
@@ -135,6 +138,14 @@ impl TextInput {
                 );
                 next_char_x += char_width;
             }
+        }
+    }
+
+    fn color(&self) -> Color {
+        if self.focused {
+            Color::WHITE
+        } else {
+            Color::from_rgb(100, 100, 100)
         }
     }
 
@@ -156,5 +167,9 @@ impl TextInput {
 
     pub fn delete_last_char(&mut self) {
         self.value.pop();
+    }
+
+    pub fn bounds(&self) -> &Rect {
+        &self.bounds
     }
 }
