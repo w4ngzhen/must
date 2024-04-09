@@ -165,8 +165,10 @@ impl TextInput {
         self.value.push(c);
     }
 
-    pub fn delete_last_char(&mut self) {
-        self.value.pop();
+    pub fn delete_char(&mut self, count: u16) {
+        for _ in 0..count {
+            self.value.pop();
+        }
     }
 
     pub fn bounds(&self) -> &Rect {

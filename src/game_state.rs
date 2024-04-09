@@ -1,7 +1,8 @@
 use ggez::event::{EventHandler, MouseButton};
 use ggez::graphics::{Color, Rect};
+use ggez::input::keyboard::{KeyInput, KeyMods};
 use ggez::mint::Point2;
-use ggez::winit::dpi::PhysicalSize;
+use ggez::winit::event::VirtualKeyCode;
 use ggez::{graphics, Context, GameError, GameResult};
 use telnet::Telnet;
 
@@ -55,6 +56,47 @@ impl EventHandler for GameState {
     ) -> Result<(), GameError> {
         self.text_input
             .set_focused(self.text_input.bounds().contains(Point2::from([_x, _y])));
+        Ok(())
+    }
+
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        input: KeyInput,
+        _repeated: bool,
+    ) -> Result<(), GameError> {
+        if self.text_input.focused() {
+            match input {
+                KeyInput {
+                    keycode: Some(code),
+                    mods,
+                    ..
+                } => match code {
+                    VirtualKeyCode::Escape => self.text_input.set_focused(false),
+                    VirtualKeyCode::Delete | VirtualKeyCode::Back => {
+                        if KeyMods::CTRL == mods {
+                            self.text_input.delete_char(5)
+                        } else {
+                            self.text_input.delete_char(1)
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+
+        Ok(())
+    }
+
+    fn text_input_event(&mut self, _ctx: &mut Context, _character: char) -> Result<(), GameError> {
+        if self.text_input.focused() {
+            // 控制键在key_down_event中处理，这里仅处理提交内容
+            if _character.is_ascii_graphic() {
+                // 目前仅支持ascii中的可见字符
+                self.text_input.append_char(_character);
+            }
+        }
         Ok(())
     }
 
