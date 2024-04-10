@@ -175,9 +175,10 @@ impl TextInput {
         if self.value.is_empty() {
             None
         } else {
-            self.history.push(self.value.clone());
+            let curr_val = self.value.clone();
+            self.history.push(curr_val.clone());
             self.value.clear();
-            Some(self.value.clone())
+            Some(curr_val.clone())
         }
     }
 

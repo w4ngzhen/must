@@ -81,10 +81,15 @@ impl EventHandler for GameState {
                         }
                     }
                     VirtualKeyCode::Return | VirtualKeyCode::Caret => {
-                        if let Some(txt_str) = self.text_input.commit() {
-                            self.telnet_client
-                                .write(txt_str.as_bytes())
+                        if let Some(mut txt_str) = self.text_input.commit() {
+                            // 文本在正常提交以后，还需要追加回车内容
+                            txt_str.push_str("\r\n");
+                            let bytes = txt_str.as_bytes();
+                            self.screen.load_buf(Box::from(bytes));
+                            let write_bytes = self.telnet_client
+                                .write(bytes)
                                 .expect("write data err.");
+                            println!("write_bytes: {}", write_bytes)
                         }
                     }
                     _ => {}
